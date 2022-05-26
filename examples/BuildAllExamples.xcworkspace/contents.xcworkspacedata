@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Workspace
    version = "1.0">
+<!--
    <FileRef
       location = "group:01.HelloWorld/HelloWorld.xcodeproj">
    </FileRef>
+-->
    <FileRef
       location = "group:02.Quake3Map/Quake3Map.xcodeproj">
    </FileRef>
+<!--
    <FileRef
       location = "group:03.CustomSceneNode/CustomSceneNode.xcodeproj">
    </FileRef>
@@ -76,6 +79,7 @@
    <FileRef
       location = "group:30.Profiling/Profiling.xcodeproj">
    </FileRef>
+-->
    <FileRef
       location = "group:Demo/Demo.xcodeproj">
    </FileRef>

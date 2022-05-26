@@ -51,7 +51,8 @@ int main()
 	*/
 
 	// ask user for driver
-	video::E_DRIVER_TYPE driverType=driverChoiceConsole(true);
+    // video::E_DRIVER_TYPE driverType = driverChoiceConsole(true);
+    video::E_DRIVER_TYPE driverType = irr::video::EDT_OPENGL;
 	if (driverType==video::EDT_COUNT)
 		return 1;
 
