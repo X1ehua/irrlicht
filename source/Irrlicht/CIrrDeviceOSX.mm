@@ -297,7 +297,7 @@ CIrrDeviceMacOSX::CIrrDeviceMacOSX(const SIrrlichtCreationParameters& param)
             NSMenuItem* menuItem = [mainMenu addItemWithTitle:bundleName action:nil keyEquivalent:@""];
             [mainMenu setSubmenu:menu forItem:menuItem];
             menuItem = [menu addItemWithTitle:@"Quit" action:@selector(terminate:) keyEquivalent:@"q"];
-            [menuItem setKeyEquivalentModifierMask:NSCommandKeyMask];
+            [menuItem setKeyEquivalentModifierMask:NSEventModifierFlagCommand];
 
             [NSApp setMainMenu:mainMenu];
 
@@ -392,9 +392,9 @@ bool CIrrDeviceMacOSX::createWindow()
 
             // macOS dock 在左侧时，x = 85 为最小，再小会导致实际的 Pos.x 变大至 158
             // y 越大，位置越往上
-            // x = 85, y = 50;
-            // CreationParams.WindowPosition.X = x;
-            // CreationParams.WindowPosition.Y = y;
+            x = 85, y = 270;
+            CreationParams.WindowPosition.X = x;
+            CreationParams.WindowPosition.Y = y;
             Window = [[NSWindow alloc] initWithContentRect:NSMakeRect(x, y, CreationParams.WindowSize.Width,CreationParams.WindowSize.Height) styleMask:NSTitledWindowMask+NSClosableWindowMask+NSResizableWindowMask backing:type defer:FALSE];
 
             // if (CreationParams.WindowPosition.X == -1 && CreationParams.WindowPosition.Y == -1)
@@ -536,19 +536,19 @@ bool CIrrDeviceMacOSX::run()
 
 		switch([(NSEvent *)event type])
 		{
-			case NSKeyDown:
+            case NSEventTypeKeyDown:
 				postKeyEvent(event,ievent,true);
                 // printf("NSEvent KEY-DOWN: %c\n", ievent.KeyInput.Char);
 				break;
 
-			case NSKeyUp:
+            case NSEventTypeKeyUp:
 				postKeyEvent(event,ievent,false);
 				break;
 
-			case NSFlagsChanged:
+            case NSEventTypeFlagsChanged:
 				ievent.EventType = irr::EET_KEY_INPUT_EVENT;
-				ievent.KeyInput.Shift = ([(NSEvent *)event modifierFlags] & NSShiftKeyMask) != 0;
-				ievent.KeyInput.Control = ([(NSEvent *)event modifierFlags] & NSControlKeyMask) != 0;
+                ievent.KeyInput.Shift = ([(NSEvent *)event modifierFlags] & NSEventModifierFlagShift) != 0;
+                ievent.KeyInput.Control = ([(NSEvent *)event modifierFlags] & NSEventModifierFlagControl) != 0;
 
 				if (IsShiftDown != ievent.KeyInput.Shift)
 				{
@@ -575,7 +575,7 @@ bool CIrrDeviceMacOSX::run()
 				[NSApp sendEvent:event];
 				break;
 
-			case NSLeftMouseDown:
+            case NSEventTypeLeftMouseDown:
 				ievent.EventType = irr::EET_MOUSE_INPUT_EVENT;
 				ievent.MouseInput.Event = irr::EMIE_LMOUSE_PRESSED_DOWN;
 				MouseButtonStates |= irr::EMBSM_LEFT;
@@ -583,7 +583,7 @@ bool CIrrDeviceMacOSX::run()
 				postMouseEvent(event,ievent);
 				break;
 
-			case NSLeftMouseUp:
+            case NSEventTypeLeftMouseUp:
 				ievent.EventType = irr::EET_MOUSE_INPUT_EVENT;
 				MouseButtonStates &= !irr::EMBSM_LEFT;
 				ievent.MouseInput.ButtonStates = MouseButtonStates;
@@ -591,7 +591,7 @@ bool CIrrDeviceMacOSX::run()
 				postMouseEvent(event,ievent);
 				break;
 
-			case NSOtherMouseDown:
+            case NSEventTypeOtherMouseDown:
 				ievent.EventType = irr::EET_MOUSE_INPUT_EVENT;
 				ievent.MouseInput.Event = irr::EMIE_MMOUSE_PRESSED_DOWN;
 				MouseButtonStates |= irr::EMBSM_MIDDLE;
@@ -599,7 +599,7 @@ bool CIrrDeviceMacOSX::run()
 				postMouseEvent(event,ievent);
 				break;
 
-			case NSOtherMouseUp:
+            case NSEventTypeOtherMouseUp:
 				ievent.EventType = irr::EET_MOUSE_INPUT_EVENT;
 				MouseButtonStates &= !irr::EMBSM_MIDDLE;
 				ievent.MouseInput.ButtonStates = MouseButtonStates;
@@ -607,17 +607,17 @@ bool CIrrDeviceMacOSX::run()
 				postMouseEvent(event,ievent);
 				break;
 
-			case NSMouseMoved:
-			case NSLeftMouseDragged:
-			case NSRightMouseDragged:
-			case NSOtherMouseDragged:
+            case NSEventTypeMouseMoved:
+            case NSEventTypeLeftMouseDragged:
+            case NSEventTypeRightMouseDragged:
+            case NSEventTypeOtherMouseDragged:
 				ievent.EventType = irr::EET_MOUSE_INPUT_EVENT;
 				ievent.MouseInput.Event = irr::EMIE_MOUSE_MOVED;
 				ievent.MouseInput.ButtonStates = MouseButtonStates;
 				postMouseEvent(event,ievent);
 				break;
 
-			case NSRightMouseDown:
+            case NSEventTypeRightMouseDown:
 				ievent.EventType = irr::EET_MOUSE_INPUT_EVENT;
 				ievent.MouseInput.Event = irr::EMIE_RMOUSE_PRESSED_DOWN;
 				MouseButtonStates |= irr::EMBSM_RIGHT;
@@ -625,7 +625,7 @@ bool CIrrDeviceMacOSX::run()
 				postMouseEvent(event,ievent);
 				break;
 
-			case NSRightMouseUp:
+            case NSEventTypeRightMouseUp:
 				ievent.EventType = irr::EET_MOUSE_INPUT_EVENT;
 				ievent.MouseInput.Event = irr::EMIE_RMOUSE_LEFT_UP;
 				MouseButtonStates &= !irr::EMBSM_RIGHT;
@@ -633,7 +633,7 @@ bool CIrrDeviceMacOSX::run()
 				postMouseEvent(event,ievent);
 				break;
 
-			case NSScrollWheel:
+            case NSEventTypeScrollWheel:
 				ievent.EventType = irr::EET_MOUSE_INPUT_EVENT;
 				ievent.MouseInput.Event = irr::EMIE_MOUSE_WHEEL;
 				ievent.MouseInput.Wheel = [(NSEvent *)event deltaY];
