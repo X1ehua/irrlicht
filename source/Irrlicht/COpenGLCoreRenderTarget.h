@@ -196,7 +196,7 @@ public:
 						GLenum textarget = currentTexture->getType() == ETT_2D ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP_POSITIVE_X + (int)CubeSurfaces[i];
 						Driver->irrGlFramebufferTexture2D(GL_FRAMEBUFFER, AssignedTextures[i], textarget, textureID, 0);
 #ifdef _DEBUG
-						Driver->testGLError(__LINE__);
+						Driver->testGLError(__LINE__, __FILE__);
 #endif
 					}
 					else if (AssignedTextures[i] != GL_NONE)
@@ -275,7 +275,7 @@ public:
 					AssignedStencil = false;
 				}
 #ifdef _DEBUG
-				Driver->testGLError(__LINE__);
+				Driver->testGLError(__LINE__, __FILE__);
 #endif
 
 				RequestDepthStencilUpdate = false;
@@ -299,7 +299,7 @@ public:
 				}
 
 #ifdef _DEBUG
-				Driver->testGLError(__LINE__);
+				Driver->testGLError(__LINE__, __FILE__);
 #endif
 
 			}

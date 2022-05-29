@@ -1997,7 +1997,7 @@ void COpenGLDriver::setMaterial(const SMaterial& material)
 
 
 //! prints error if an error happened.
-bool COpenGLDriver::testGLError(int code)
+bool COpenGLDriver::testGLError(int code, const char* msg)
 {
 #ifdef _DEBUG
 	GLenum g = glGetError();
@@ -2024,6 +2024,10 @@ bool COpenGLDriver::testGLError(int code)
 		os::Printer::log("GL_INVALID_FRAMEBUFFER_OPERATION", core::stringc(code).c_str(), ELL_ERROR); break;
 #endif
 	};
+	if (msg)
+    {
+        printf("glError: %s\n", msg);
+    }
 //	_IRR_DEBUG_BREAK_IF(true);
 	return true;
 #else

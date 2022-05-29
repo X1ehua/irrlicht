@@ -31,265 +31,7 @@
 #include "CNSOGLManager.h"
 
 #if defined _IRR_COMPILE_WITH_JOYSTICK_EVENTS_
-
-#include <IOKit/IOKitLib.h>
-#include <IOKit/IOCFPlugIn.h>
-#include <Kernel/IOKit/hidsystem/IOHIDUsageTables.h>
-#include <IOKit/hid/IOHIDLib.h>
-#include <IOKit/hid/IOHIDKeys.h>
-
-struct JoystickComponent
-{
-	IOHIDElementCookie cookie; // unique value which identifies element, will NOT change
-	long min; // reported min value possible
-	long max; // reported max value possible
-
-	long minRead; //min read value
-	long maxRead; //max read value
-
-	JoystickComponent() : min(0), minRead(0), max(0), maxRead(0)
-	{
-	}
-};
-
-struct JoystickInfo
-{
-	irr::core::array <JoystickComponent> axisComp;
-	irr::core::array <JoystickComponent> buttonComp;
-	irr::core::array <JoystickComponent> hatComp;
-
-	int hats;
-	int axes;
-	int buttons;
-	int numActiveJoysticks;
-
-	irr::SEvent persistentData;
-
-	IOHIDDeviceInterface ** interface;
-	bool removed;
-	char joystickName[256];
-	long usage; // usage page from IOUSBHID Parser.h which defines general usage
-	long usagePage; // usage within above page from IOUSBHID Parser.h which defines specific usage
-
-	JoystickInfo() : hats(0), axes(0), buttons(0), interface(0), removed(false), usage(0), usagePage(0), numActiveJoysticks(0)
-	{
-		interface = NULL;
-		memset(joystickName, '\0', 256);
-		axisComp.clear();
-		buttonComp.clear();
-		hatComp.clear();
-
-		persistentData.EventType = irr::EET_JOYSTICK_INPUT_EVENT;
-		persistentData.JoystickEvent.POV = 65535;
-		persistentData.JoystickEvent.ButtonStates = 0;
-	}
-};
-irr::core::array<JoystickInfo> ActiveJoysticks;
-
-//helper functions for init joystick
-static IOReturn closeJoystickDevice (JoystickInfo* joyInfo)
-{
-	IOReturn result = kIOReturnSuccess;
-	if (joyInfo && joyInfo->interface)
-	{
-		/* close the interface */
-		result = (*(joyInfo->interface))->close (joyInfo->interface);
-		if (kIOReturnNotOpen == result)
-		{
-			/* do nothing as device was not opened, thus can't be closed */
-		}
-		else if (kIOReturnSuccess != result)
-			irr::os::Printer::log("IOHIDDeviceInterface failed to close", irr::ELL_ERROR);
-		/* release the interface */
-		result = (*(joyInfo->interface))->Release (joyInfo->interface);
-		if (kIOReturnSuccess != result)
-			irr::os::Printer::log("IOHIDDeviceInterface failed to release", irr::ELL_ERROR);
-		joyInfo->interface = NULL;
-	}
-	return result;
-}
-
-static void addComponentInfo (CFTypeRef refElement, JoystickComponent *pComponent, int numActiveJoysticks)
-{
-	long number;
-	CFTypeRef refType;
-
-	refType = CFDictionaryGetValue ((CFDictionaryRef)refElement, CFSTR(kIOHIDElementCookieKey));
-	if (refType && CFNumberGetValue ((CFNumberRef)refType, kCFNumberLongType, &number))
-		pComponent->cookie = (IOHIDElementCookie) number;
-	refType = CFDictionaryGetValue ((CFDictionaryRef)refElement, CFSTR(kIOHIDElementMinKey));
-	if (refType && CFNumberGetValue ((CFNumberRef)refType, kCFNumberLongType, &number))
-		pComponent->minRead = pComponent->min = number;
-	refType = CFDictionaryGetValue ((CFDictionaryRef)refElement, CFSTR(kIOHIDElementMaxKey));
-	if (refType && CFNumberGetValue ((CFNumberRef)refType, kCFNumberLongType, &number))
-		pComponent->maxRead = pComponent->max = number;
-}
-
-static void getJoystickComponentArrayHandler (const void * value, void * parameter);
-
-static void addJoystickComponent (CFTypeRef refElement, JoystickInfo* joyInfo)
-{
-	long elementType, usagePage, usage;
-	CFTypeRef refElementType = CFDictionaryGetValue ((CFDictionaryRef)refElement, CFSTR(kIOHIDElementTypeKey));
-	CFTypeRef refUsagePage = CFDictionaryGetValue ((CFDictionaryRef)refElement, CFSTR(kIOHIDElementUsagePageKey));
-	CFTypeRef refUsage = CFDictionaryGetValue ((CFDictionaryRef)refElement, CFSTR(kIOHIDElementUsageKey));
-
-	if ((refElementType) && (CFNumberGetValue ((CFNumberRef)refElementType, kCFNumberLongType, &elementType)))
-	{
-		/* look at types of interest */
-		if ((elementType == kIOHIDElementTypeInput_Misc) || (elementType == kIOHIDElementTypeInput_Button) ||
-			(elementType == kIOHIDElementTypeInput_Axis))
-		{
-			if (refUsagePage && CFNumberGetValue ((CFNumberRef)refUsagePage, kCFNumberLongType, &usagePage) &&
-				refUsage && CFNumberGetValue ((CFNumberRef)refUsage, kCFNumberLongType, &usage))
-			{
-				switch (usagePage) /* only interested in kHIDPage_GenericDesktop and kHIDPage_Button */
-				{
-					case kHIDPage_GenericDesktop:
-					{
-						switch (usage) /* look at usage to determine function */
-						{
-							case kHIDUsage_GD_X:
-							case kHIDUsage_GD_Y:
-							case kHIDUsage_GD_Z:
-							case kHIDUsage_GD_Rx:
-							case kHIDUsage_GD_Ry:
-							case kHIDUsage_GD_Rz:
-							case kHIDUsage_GD_Slider:
-							case kHIDUsage_GD_Dial:
-							case kHIDUsage_GD_Wheel:
-							{
-								joyInfo->axes++;
-								JoystickComponent newComponent;
-								addComponentInfo(refElement, &newComponent, joyInfo->numActiveJoysticks);
-								joyInfo->axisComp.push_back(newComponent);
-							}
-							break;
-							case kHIDUsage_GD_Hatswitch:
-							{
-								joyInfo->hats++;
-								JoystickComponent newComponent;
-								addComponentInfo(refElement, &newComponent, joyInfo->numActiveJoysticks);
-								joyInfo->hatComp.push_back(newComponent);
-							}
-							break;
-						}
-					}
-						break;
-					case kHIDPage_Button:
-					{
-						joyInfo->buttons++;
-						JoystickComponent newComponent;
-						addComponentInfo(refElement, &newComponent, joyInfo->numActiveJoysticks);
-						joyInfo->buttonComp.push_back(newComponent);
-					}
-						break;
-					default:
-						break;
-				}
-			}
-		}
-		else if (kIOHIDElementTypeCollection == elementType)
-		{
-			//get elements
-			CFTypeRef refElementTop = CFDictionaryGetValue ((CFMutableDictionaryRef) refElement, CFSTR(kIOHIDElementKey));
-			if (refElementTop)
-			{
-				CFTypeID type = CFGetTypeID (refElementTop);
-				if (type == CFArrayGetTypeID())
-				{
-					CFRange range = {0, CFArrayGetCount ((CFArrayRef)refElementTop)};
-					CFArrayApplyFunction ((CFArrayRef)refElementTop, range, getJoystickComponentArrayHandler, joyInfo);
-				}
-			}
-		}
-	}
-}
-
-static void getJoystickComponentArrayHandler (const void * value, void * parameter)
-{
-	if (CFGetTypeID (value) == CFDictionaryGetTypeID ())
-		addJoystickComponent ((CFTypeRef) value, (JoystickInfo *) parameter);
-}
-
-static void joystickTopLevelElementHandler (const void * value, void * parameter)
-{
-	CFTypeRef refCF = 0;
-	if (CFGetTypeID (value) != CFDictionaryGetTypeID ())
-		return;
-	refCF = CFDictionaryGetValue ((CFDictionaryRef)value, CFSTR(kIOHIDElementUsagePageKey));
-	if (!CFNumberGetValue ((CFNumberRef)refCF, kCFNumberLongType, &((JoystickInfo *) parameter)->usagePage))
-		irr::os::Printer::log("CFNumberGetValue error retrieving JoystickInfo->usagePage", irr::ELL_ERROR);
-	refCF = CFDictionaryGetValue ((CFDictionaryRef)value, CFSTR(kIOHIDElementUsageKey));
-	if (!CFNumberGetValue ((CFNumberRef)refCF, kCFNumberLongType, &((JoystickInfo *) parameter)->usage))
-		irr::os::Printer::log("CFNumberGetValue error retrieving JoystickInfo->usage", irr::ELL_ERROR);
-}
-
-static void getJoystickDeviceInfo (io_object_t hidDevice, CFMutableDictionaryRef hidProperties, JoystickInfo *joyInfo)
-{
-	CFMutableDictionaryRef usbProperties = 0;
-	io_registry_entry_t parent1, parent2;
-
-	/* Mac OS X currently is not mirroring all USB properties to HID page so need to look at USB device page also
-	* get dictionary for usb properties: step up two levels and get CF dictionary for USB properties
-	*/
-	if ((KERN_SUCCESS == IORegistryEntryGetParentEntry (hidDevice, kIOServicePlane, &parent1)) &&
-		(KERN_SUCCESS == IORegistryEntryGetParentEntry (parent1, kIOServicePlane, &parent2)) &&
-		(KERN_SUCCESS == IORegistryEntryCreateCFProperties (parent2, &usbProperties, kCFAllocatorDefault, kNilOptions)))
-	{
-		if (usbProperties)
-		{
-			CFTypeRef refCF = 0;
-			/* get device info
-			* try hid dictionary first, if fail then go to usb dictionary
-			*/
-
-			/* get joystickName name */
-			refCF = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDProductKey));
-			if (!refCF)
-				refCF = CFDictionaryGetValue (usbProperties, CFSTR("USB Product Name"));
-			if (refCF)
-			{
-				if (!CFStringGetCString ((CFStringRef)refCF, joyInfo->joystickName, 256, CFStringGetSystemEncoding ()))
-					irr::os::Printer::log("CFStringGetCString error getting joyInfo->joystickName", irr::ELL_ERROR);
-			}
-
-			/* get usage page and usage */
-			refCF = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDPrimaryUsagePageKey));
-			if (refCF)
-			{
-				if (!CFNumberGetValue ((CFNumberRef)refCF, kCFNumberLongType, &joyInfo->usagePage))
-					irr::os::Printer::log("CFNumberGetValue error getting joyInfo->usagePage", irr::ELL_ERROR);
-				refCF = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDPrimaryUsageKey));
-				if (refCF)
-					if (!CFNumberGetValue ((CFNumberRef)refCF, kCFNumberLongType, &joyInfo->usage))
-						irr::os::Printer::log("CFNumberGetValue error getting joyInfo->usage", irr::ELL_ERROR);
-			}
-
-			if (NULL == refCF) /* get top level element HID usage page or usage */
-			{
-				/* use top level element instead */
-				CFTypeRef refCFTopElement = 0;
-				refCFTopElement = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDElementKey));
-				{
-					/* refCFTopElement points to an array of element dictionaries */
-					CFRange range = {0, CFArrayGetCount ((CFArrayRef)refCFTopElement)};
-					CFArrayApplyFunction ((CFArrayRef)refCFTopElement, range, joystickTopLevelElementHandler, joyInfo);
-				}
-			}
-
-			CFRelease (usbProperties);
-		}
-		else
-			irr::os::Printer::log("IORegistryEntryCreateCFProperties failed to create usbProperties", irr::ELL_ERROR);
-
-		if (kIOReturnSuccess != IOObjectRelease (parent2))
-			irr::os::Printer::log("IOObjectRelease failed to release parent2", irr::ELL_ERROR);
-		if (kIOReturnSuccess != IOObjectRelease (parent1))
-			irr::os::Printer::log("IOObjectRelease failed to release parent1", irr::ELL_ERROR);
-	}
-}
-
+#removed...
 #endif // _IRR_COMPILE_WITH_JOYSTICK_EVENTS_
 
 // Contents from Events.h from Carbon/HIToolbox but we need it with Cocoa too
@@ -429,29 +171,6 @@ enum {
 	kVK_DownArrow		= 0x7D,
 	kVK_UpArrow		= 0x7E
 };
-
-//------------------------------------------------------------------------------------------
-Boolean GetDictionaryBoolean(CFDictionaryRef theDict, const void* key)
-{
-	// get a boolean from the dictionary
-	Boolean value = false;
-	CFBooleanRef boolRef;
-	boolRef = (CFBooleanRef)CFDictionaryGetValue(theDict, key);
-	if (boolRef != NULL)
-		value = CFBooleanGetValue(boolRef);
-	return value;
-}
-//------------------------------------------------------------------------------------------
-long GetDictionaryLong(CFDictionaryRef theDict, const void* key)
-{
-	// get a long from the dictionary
-	long value = 0;
-	CFNumberRef numRef;
-	numRef = (CFNumberRef)CFDictionaryGetValue(theDict, key);
-	if (numRef != NULL)
-		CFNumberGetValue(numRef, kCFNumberLongType, &value);
-	return value;
-}
 
 namespace irr
 {
@@ -670,11 +389,16 @@ bool CIrrDeviceMacOSX::createWindow()
                 int screenHeight = [[[NSScreen screens] objectAtIndex:0] frame].size.height;
                 y = screenHeight - y - CreationParams.WindowSize.Height;
             }
-            
+
+            // macOS dock 在左侧时，x = 85 为最小，再小会导致实际的 Pos.x 变大至 158
+            // y 越大，位置越往上
+            // x = 85, y = 50;
+            // CreationParams.WindowPosition.X = x;
+            // CreationParams.WindowPosition.Y = y;
             Window = [[NSWindow alloc] initWithContentRect:NSMakeRect(x, y, CreationParams.WindowSize.Width,CreationParams.WindowSize.Height) styleMask:NSTitledWindowMask+NSClosableWindowMask+NSResizableWindowMask backing:type defer:FALSE];
 
-            if (CreationParams.WindowPosition.X == -1 && CreationParams.WindowPosition.Y == -1)
-                [Window center];
+            // if (CreationParams.WindowPosition.X == -1 && CreationParams.WindowPosition.Y == -1)
+            //     [Window center];
         }
         
         DeviceWidth = CreationParams.WindowSize.Width;
@@ -814,6 +538,7 @@ bool CIrrDeviceMacOSX::run()
 		{
 			case NSKeyDown:
 				postKeyEvent(event,ievent,true);
+                // printf("NSEvent KEY-DOWN: %c\n", ievent.KeyInput.Char);
 				break;
 
 			case NSKeyUp:
@@ -1137,6 +862,7 @@ void CIrrDeviceMacOSX::storeMouseLocation()
 		const core::position2di& curr = ((CCursorControl *)CursorControl)->getPosition(true);
 		if (curr.X != x || curr.Y != y)
 		{
+			// In fullscreen mode, events are not sent regularly so rely on polling
 			irr::SEvent ievent;
 			ievent.EventType = irr::EET_MOUSE_INPUT_EVENT;
 			ievent.MouseInput.Event = irr::EMIE_MOUSE_MOVED;

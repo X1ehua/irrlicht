@@ -356,7 +356,7 @@ namespace video
 
 		//! checks if an OpenGL error has happened and prints it (+ some internal code which is usually the line number)
 		//! for performance reasons only available in debug mode
-		bool testGLError(int code=0);
+		bool testGLError(int code = 0, const char* msg = NULL);
 
 		//! Set/unset a clipping plane.
 		//! There are at least 6 clipping planes available for the user to set at will.

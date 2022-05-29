@@ -130,7 +130,7 @@
 
 //! Define _IRR_COMPILE_WITH_JOYSTICK_SUPPORT_ if you want joystick events.
 #if !(defined(__FreeBSD__) || defined(__OpenBSD__))
-#define _IRR_COMPILE_WITH_JOYSTICK_EVENTS_
+// #define _IRR_COMPILE_WITH_JOYSTICK_EVENTS_
 #endif
 #ifdef NO_IRR_COMPILE_WITH_JOYSTICK_EVENTS_
 #undef _IRR_COMPILE_WITH_JOYSTICK_EVENTS_

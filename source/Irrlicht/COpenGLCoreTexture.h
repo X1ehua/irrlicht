@@ -148,7 +148,7 @@ public:
 
 		Driver->getCacheHandler()->getTextureCache().set(0, prevTexture);
 
-		Driver->testGLError(__LINE__);
+		Driver->testGLError(__LINE__, __FILE__);
 	}
 
 	COpenGLCoreTexture(const io::path& name, const core::dimension2d<u32>& size, E_TEXTURE_TYPE type, ECOLOR_FORMAT format, TOpenGLDriver* driver)
@@ -272,7 +272,7 @@ public:
 				IImage* tmpImage = LockImage;	// not sure yet if the size required by glGetTexImage is always correct, if not we might have to allocate a different tmpImage and convert colors later on.
 
 				Driver->getCacheHandler()->getTextureCache().set(0, this);
-				Driver->testGLError(__LINE__);
+				Driver->testGLError(__LINE__, __FILE__);
 
 				GLenum tmpTextureType = TextureType;
 
@@ -284,7 +284,7 @@ public:
 				}
 
 				glGetTexImage(tmpTextureType, MipLevelStored, PixelFormat, PixelType, tmpImage->getData());
-				Driver->testGLError(__LINE__);
+				Driver->testGLError(__LINE__, __FILE__);
 
 				if (IsRenderTarget && lockFlags == ETLF_FLIP_Y_UP_RTT)
 				{
@@ -370,7 +370,7 @@ public:
 				}
 			}
 
-			Driver->testGLError(__LINE__);
+			Driver->testGLError(__LINE__, __FILE__);
 		}
 
 		return (LockImage) ? getLockImageData(MipLevelStored) : 0;
@@ -602,7 +602,7 @@ protected:
 					glTexImage2D(tmpTextureType, level, InternalFormat, width, height, 0, PixelFormat, PixelType, tmpData);
 				else
 					glTexSubImage2D(tmpTextureType, level, 0, 0, width, height, PixelFormat, PixelType, tmpData);
-				Driver->testGLError(__LINE__);
+				Driver->testGLError(__LINE__, __FILE__);
 				break;
 			default:
 				break;
@@ -622,7 +622,7 @@ protected:
 					Driver->irrGlCompressedTexImage2D(tmpTextureType, level, InternalFormat, width, height, 0, dataSize, data);
 				else
 					Driver->irrGlCompressedTexSubImage2D(tmpTextureType, level, 0, 0, width, height, PixelFormat, dataSize, data);
-				Driver->testGLError(__LINE__);
+				Driver->testGLError(__LINE__, __FILE__);
 				break;
 			default:
 				break;
