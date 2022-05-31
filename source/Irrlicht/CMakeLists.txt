@@ -58,14 +58,8 @@ unset(SDL_ENABLED CACHE)
 # tell cmake about the dependency
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${CMAKE_REQUIRED_INCLUDES}/IrrCompileConfig.h)
 
-check_symbol_exists(_IRR_COMPILE_WITH_OGLES1_ "IrrCompileConfig.h" OGLES1_ENABLED)
-if(OGLES1_ENABLED)
-	# only tested on Android, probably works on Linux (is this needed anywhere else?)
-	find_library(OPENGLES_LIBRARY NAMES GLESv1_CM REQUIRED)
-	find_library(EGL_LIBRARY NAMES EGL REQUIRED)
+set(OGLES1_ENABLED OFF)
 
-	message(STATUS "Found OpenGLES: ${OPENGLES_LIBRARY}")
-endif()
 check_symbol_exists(_IRR_COMPILE_WITH_OGLES2_ "IrrCompileConfig.h" OGLES2_ENABLED)
 if(OGLES2_ENABLED)
 	find_package(OpenGLES2 REQUIRED)
@@ -81,11 +75,8 @@ if(NOT ANDROID AND NOT APPLE)
 		find_library(XINPUT_LIBRARY Xi REQUIRED)
 	endif()
 endif()
-check_symbol_exists(_IRR_COMPILE_WITH_SDL_DEVICE_ "IrrCompileConfig.h" SDL_ENABLED)
-if(SDL_ENABLED)
-	find_package(SDL2 CONFIG REQUIRED)
-	message(STATUS "Found SDL2: ${SDL2_LIBRARIES}")
-endif()
+
+set(SDL_ENABLED OFF)
 
 # Platform-specific libs
 
@@ -343,11 +334,6 @@ endif()
 
 set(folder_irr "IrrlichtMt")
 # set_target_properties(IrrMeshObj PROPERTIES FOLDER ${folder_irr})
-# set_target_properties(IrrObj PROPERTIES FOLDER ${folder_irr})
-# set_target_properties(IrrVideoObj PROPERTIES FOLDER ${folder_irr})
-# set_target_properties(IrrIOObj PROPERTIES FOLDER ${folder_irr})
-# set_target_properties(IrrOtherObj PROPERTIES FOLDER ${folder_irr})
-# set_target_properties(IrrGUIObj PROPERTIES FOLDER ${folder_irr})
 
 set_target_properties(IrrlichtMt PROPERTIES
 	VERSION ${PROJECT_VERSION}

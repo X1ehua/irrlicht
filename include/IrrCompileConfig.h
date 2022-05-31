@@ -98,7 +98,7 @@
 #define _IRR_COMPILE_WITH_OGLES2_
 #define _IRR_COMPILE_WITH_WEBGL1_
 #define _IRR_COMPILE_WITH_EGL_MANAGER_
-#define _IRR_COMPILE_WITH_SDL_DEVICE_
+// #define _IRR_COMPILE_WITH_SDL_DEVICE_
 #define NO_IRR_COMPILE_WITH_X11_DEVICE_
 #define _IRR_LINUX_PLATFORM_	// emscripten basically working like a unix
 #endif // __EMSCRIPTEN__
@@ -208,7 +208,7 @@ define out.
 Depending on platform you may have to enable _IRR_OGLES1_USE_KHRONOS_API_HEADERS_ as well when using it.
 */
 #if defined(_IRR_ANDROID_PLATFORM_) || defined(_IRR_IOS_PLATFORM_)
-#define _IRR_COMPILE_WITH_OGLES1_
+// #define _IRR_COMPILE_WITH_OGLES1_
 #endif
 #ifdef NO_IRR_COMPILE_WITH_OGLES1_
 #undef _IRR_COMPILE_WITH_OGLES1_
