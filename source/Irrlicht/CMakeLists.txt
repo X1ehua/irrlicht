@@ -1,7 +1,6 @@
-option(BUILD_SHARED_LIBS "Build shared library" TRUE)
+set(BUILD_SHARED_LIBS OFF)
 
 # Compiler flags
-
 add_definitions(-DIRRLICHT_EXPORTS)
 if(NOT BUILD_SHARED_LIBS)
 	add_definitions(-D_IRR_STATIC_LIB_)
@@ -43,7 +42,6 @@ elseif(MSVC)
 endif()
 
 # Required libs
-
 find_package(ZLIB REQUIRED)
 find_package(JPEG REQUIRED)
 find_package(PNG REQUIRED)
@@ -143,22 +141,17 @@ set(link_libs
 )
 
 # Source files
-
-set(IRRMESHLOADER
+set(src_IrrMeshObj
 	CB3DMeshFileLoader.cpp
 	COBJMeshFileLoader.cpp
 	CXMeshFileLoader.cpp
-)
-
-add_library(IRRMESHOBJ OBJECT
 	CSkinnedMesh.cpp
 	CBoneSceneNode.cpp
 	CMeshSceneNode.cpp
 	CAnimatedMeshSceneNode.cpp
-	${IRRMESHLOADER}
 )
 
-add_library(IRROBJ OBJECT
+set(src_IrrObj
 	CBillboardSceneNode.cpp
 	CCameraSceneNode.cpp
 	CDummyTransformationSceneNode.cpp
@@ -170,7 +163,7 @@ add_library(IRROBJ OBJECT
 	CDefaultSceneNodeFactory.cpp
 )
 
-set(IRRDRVROBJ
+set(src_DriverObj
 	CNullDriver.cpp
 	COpenGLCacheHandler.cpp
 	COpenGLDriver.cpp
@@ -192,7 +185,7 @@ set(IRRDRVROBJ
 	mt_opengl_loader.cpp
 )
 
-set(IRRIMAGEOBJ
+set(src_ImageObj
 	CColorConverter.cpp
 	CImage.cpp
 	CImageLoaderBMP.cpp
@@ -203,14 +196,14 @@ set(IRRIMAGEOBJ
 	CImageWriterPNG.cpp
 )
 
-add_library(IRRVIDEOOBJ OBJECT
+set(src_IrrVideoObj
 	CVideoModeList.cpp
 	CFPSCounter.cpp
-	${IRRDRVROBJ}
-	${IRRIMAGEOBJ}
+	${src_DriverObj}
+	${src_ImageObj}
 )
 
-add_library(IRRIOOBJ OBJECT
+set(src_IrrIOObj
 	CFileList.cpp
 	CFileSystem.cpp
 	CLimitReadFile.cpp
@@ -222,7 +215,7 @@ add_library(IRRIOOBJ OBJECT
 	CAttributes.cpp
 )
 
-add_library(IRROTHEROBJ OBJECT
+set(src_IrrOtherObj
 	CIrrDeviceSDL.cpp
 	CIrrDeviceLinux.cpp
 	CIrrDeviceConsole.cpp
@@ -237,23 +230,7 @@ add_library(IRROTHEROBJ OBJECT
 	CProfiler.cpp
 )
 
-if(ANDROID)
-	target_sources(IRROTHEROBJ PRIVATE
-		Android/CIrrDeviceAndroid.cpp
-		Android/CAndroidAssetReader.cpp
-		Android/CAndroidAssetFileArchive.cpp
-		Android/CKeyEventWrapper.cpp
-	)
-elseif(APPLE)
-	# Build all IRROTHEROBJ sources as objc++, including the .cpp's
-	set_target_properties(IRROTHEROBJ PROPERTIES COMPILE_OPTIONS "-xobjective-c++")
-	target_sources(IRROTHEROBJ PRIVATE
-		CIrrDeviceOSX.mm
-		CNSOGLManager.mm
-	)
-endif()
-
-add_library(IRRGUIOBJ OBJECT
+set(src_IrrGUIObj
 	CGUIButton.cpp
 	CGUICheckBox.cpp
 	CGUIComboBox.cpp
@@ -285,17 +262,64 @@ add_library(IRRGUIOBJ OBJECT
 	CGUIProfiler.cpp
 )
 
-# Library
+add_library(IrrlichtMt
+	${src_IrrObj}
+	${src_IrrIOObj}
+	${src_IrrGUIObj}
+	${src_IrrMeshObj}
+	${src_IrrVideoObj}
+	${src_IrrOtherObj}
+)
 
+if(ANDROID)
+	target_sources(IrrlichtMt PRIVATE
+		Android/CIrrDeviceAndroid.cpp
+		Android/CAndroidAssetReader.cpp
+		Android/CAndroidAssetFileArchive.cpp
+		Android/CKeyEventWrapper.cpp
+	)
+elseif(APPLE)
+	# Build all IrrOtherObj sources as objc++, including the .cpp's
+	set_target_properties(IrrlichtMt PROPERTIES COMPILE_OPTIONS "-xobjective-c++")
+	target_sources(IrrlichtMt PRIVATE
+		CIrrDeviceOSX.mm
+		CNSOGLManager.mm
+	)
+endif()
+
+# set(IrrSubArchives IrrObj IrrMeshObj IrrIOObj IrrGUIObj IrrVideoObj IrrOtherObj)
+
+# Library
+#[[
 add_library(IrrlichtMt)
-foreach(object_lib
-	IRRMESHOBJ IRROBJ IRRVIDEOOBJ
-	IRRIOOBJ IRROTHEROBJ IRRGUIOBJ)
+foreach(object_lib ${IrrSubArchives})
 	# Set include directories for object library compilation
 	target_include_directories(${object_lib} PRIVATE ${link_includes})
 	# Add objects from object library to main library
 	target_sources(IrrlichtMt PRIVATE $<TARGET_OBJECTS:${object_lib}>)
 endforeach()
+]]
+
+message(">> CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
+
+#[[
+set(SUB_A_PATH $ENV{HOME}/libirr/build/source/Irrlicht/Irrlicht.build/Debug/)
+set(IrrSubArchivePath
+	${SUB_A_PATH}/IrrObj.build/libIrrObj.a
+	${SUB_A_PATH}/IrrMeshObj.build/libIrrMeshObj.a
+	${SUB_A_PATH}/IrrGUIObj.build/libIrrGUIObj.a
+	${SUB_A_PATH}/IrrIOObj.build/libIrrIOObj.a
+	${SUB_A_PATH}/IrrVideoObj.build/libIrrVideoObj.a
+	${SUB_A_PATH}/IrrOtherObj.build/libIrrOtherObj.a
+)
+
+set(irr_lib_archive $ENV{HOME}/libirr/lib/OSX/libIrrlichtMt.a)
+add_custom_target(IrrlichtMt
+	COMMAND libtool -static -o ${irr_lib_archive} ${IrrSubArchivePath}
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	# DEPENDS ${IrrSubArchives}
+)
+]]
 
 # Alias target provides add_submodule compatibility
 add_library(IrrlichtMt::IrrlichtMt ALIAS IrrlichtMt)
@@ -311,10 +335,19 @@ target_include_directories(IrrlichtMt
 
 target_link_libraries(IrrlichtMt PRIVATE ${link_libs})
 
+message(">> BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
 # Propagate static library flag to lib users, only needed for Windows
 if(NOT BUILD_SHARED_LIBS)
-	target_compile_definitions(IrrlichtMt INTERFACE _IRR_STATIC_LIB_)
+	# target_compile_definitions(IrrlichtMt INTERFACE _IRR_STATIC_LIB_)
 endif()
+
+set(folder_irr "IrrlichtMt")
+# set_target_properties(IrrMeshObj PROPERTIES FOLDER ${folder_irr})
+# set_target_properties(IrrObj PROPERTIES FOLDER ${folder_irr})
+# set_target_properties(IrrVideoObj PROPERTIES FOLDER ${folder_irr})
+# set_target_properties(IrrIOObj PROPERTIES FOLDER ${folder_irr})
+# set_target_properties(IrrOtherObj PROPERTIES FOLDER ${folder_irr})
+# set_target_properties(IrrGUIObj PROPERTIES FOLDER ${folder_irr})
 
 set_target_properties(IrrlichtMt PROPERTIES
 	VERSION ${PROJECT_VERSION}
@@ -324,6 +357,8 @@ set_target_properties(IrrlichtMt PROPERTIES
 if(WIN32)
 	set_target_properties(IrrlichtMt PROPERTIES PREFIX "") # for DLL name
 endif()
+
+message(">> CMAKE_INSTALL_LIBDIR: ${CMAKE_INSTALL_LIBDIR}")
 
 # Installation of library
 if(ANDROID)

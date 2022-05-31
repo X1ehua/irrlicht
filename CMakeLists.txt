@@ -15,6 +15,7 @@ project(Irrlicht
 message(STATUS "*** Building IrrlichtMt ${PROJECT_VERSION} ***")
 
 set(BUILD_SHARED_LIBS OFF)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 include(GNUInstallDirs)
 
@@ -56,6 +57,7 @@ export(EXPORT IrrlichtMt-export
 	NAMESPACE IrrlichtMt::
 )
 
+message(">> install-headers: ${PROJECT_SOURCE_DIR}/include ${CMAKE_INSTALL_INCLUDEDIR}/irrlichtmt")
 # Installation of headers.
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/"
 	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/irrlichtmt"
