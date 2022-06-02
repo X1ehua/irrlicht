@@ -455,26 +455,7 @@ void CIrrDeviceMacOSX::createDriver()
 {
 	switch (CreationParams.DriverType)
 	{
-		case video::EDT_SOFTWARE:
-#ifdef _IRR_COMPILE_WITH_SOFTWARE_
-			VideoDriver = video::createSoftwareDriver(CreationParams.WindowSize, CreationParams.Fullscreen, FileSystem, this);
-			SoftwareRendererType = 2;
-#else
-			os::Printer::log("No Software driver support compiled in.", ELL_ERROR);
-#endif
-			break;
-
-		case video::EDT_BURNINGSVIDEO:
-#ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
-			VideoDriver = video::createBurningVideoDriver(CreationParams, FileSystem, this);
-			SoftwareRendererType = 1;
-#else
-			os::Printer::log("Burning's video driver was not compiled in.", ELL_ERROR);
-#endif
-			break;
-
 		case video::EDT_OPENGL:
-#ifdef _IRR_COMPILE_WITH_OPENGL_
             {
                 video::SExposedVideoData data;
                 data.OpenGLOSX.Window = Window;
@@ -497,16 +478,15 @@ void CIrrDeviceMacOSX::createDriver()
 					[(NSOpenGLContext*)ContextManager->getContext().OpenGLOSX.Context setView:(NSView*)CreationParams.WindowId];
 				}
             }
-#else
-			os::Printer::log("No OpenGL support compiled in.", ELL_ERROR);
-#endif
 			break;
 
+        case video::EDT_BURNINGSVIDEO:
+        case video::EDT_SOFTWARE:
 		case video::DEPRECATED_EDT_DIRECT3D8_NO_LONGER_EXISTS:
 		case video::EDT_DIRECT3D9:
 		case video::EDT_OGLES1:
 		case video::EDT_OGLES2:
-			os::Printer::log("This driver is not available in OSX. Try OpenGL or Software renderer.", ELL_ERROR);
+			os::Printer::log("This driver is not available in OSX. Try OpenGL.", ELL_ERROR);
 			break;
 
 		case video::EDT_NULL:
@@ -529,7 +509,10 @@ bool CIrrDeviceMacOSX::run()
 	os::Timer::tick();
 	storeMouseLocation();
 
-	event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
+    event = [NSApp nextEventMatchingMask:NSEventMaskAny
+                               untilDate:[NSDate distantPast]
+                                  inMode:NSDefaultRunLoopMode
+                                 dequeue:YES];
 	if (event != nil)
 	{
 		bzero(&ievent,sizeof(ievent));
@@ -537,12 +520,12 @@ bool CIrrDeviceMacOSX::run()
 		switch([(NSEvent *)event type])
 		{
             case NSEventTypeKeyDown:
-				postKeyEvent(event,ievent,true);
-                // printf("NSEvent KEY-DOWN: %c\n", ievent.KeyInput.Char);
+				postKeyEvent(event, ievent, true);
+                printf("NSEvent KEY-DOWN: %c\n", ievent.KeyInput.Char);
 				break;
 
             case NSEventTypeKeyUp:
-				postKeyEvent(event,ievent,false);
+				postKeyEvent(event, ievent, false);
 				break;
 
             case NSEventTypeFlagsChanged:

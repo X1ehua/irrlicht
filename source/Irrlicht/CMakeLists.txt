@@ -357,3 +357,13 @@ install(TARGETS ${INSTALL_TARGETS}
 	EXPORT IrrlichtMt-export
 	DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 )
+
+set(lib_default ${MINETEST_ROOT_DIR}/build/lib/irrlichtmt/lib/${sysname}/${CMAKE_BUILD_TYPE})
+set(lib_wanted ${MINETEST_ROOT_DIR}/lib/irrlichtmt/lib/${sysname})
+
+message(">> lib_default: ${lib_default}")
+message(">> lib_wanted: ${lib_wanted}")
+# message(">> CMAKE_COMMAND: ${CMAKE_COMMAND}") # /opt/homebrew/Cellar/cmake/3.23.1/bin/cmake
+add_custom_command(TARGET IrrlichtMt POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy "${lib_default}/libIrrlichtMt.a" "${lib_wanted}/libIrrlichtMt.a"
+)
