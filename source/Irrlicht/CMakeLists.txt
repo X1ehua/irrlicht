@@ -253,7 +253,10 @@ set(src_IrrGUIObj
 	CGUIProfiler.cpp
 )
 
+file(GLOB includes "${CMAKE_CURRENT_SOURCE_DIR}/../../include/*.h")
+
 add_library(IrrlichtMt
+	${includes}
 	${src_IrrObj}
 	${src_IrrIOObj}
 	${src_IrrGUIObj}
@@ -292,25 +295,6 @@ endforeach()
 ]]
 
 message(">> CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
-
-#[[
-set(SUB_A_PATH $ENV{HOME}/libirr/build/source/Irrlicht/Irrlicht.build/Debug/)
-set(IrrSubArchivePath
-	${SUB_A_PATH}/IrrObj.build/libIrrObj.a
-	${SUB_A_PATH}/IrrMeshObj.build/libIrrMeshObj.a
-	${SUB_A_PATH}/IrrGUIObj.build/libIrrGUIObj.a
-	${SUB_A_PATH}/IrrIOObj.build/libIrrIOObj.a
-	${SUB_A_PATH}/IrrVideoObj.build/libIrrVideoObj.a
-	${SUB_A_PATH}/IrrOtherObj.build/libIrrOtherObj.a
-)
-
-set(irr_lib_archive $ENV{HOME}/libirr/lib/OSX/libIrrlichtMt.a)
-add_custom_target(IrrlichtMt
-	COMMAND libtool -static -o ${irr_lib_archive} ${IrrSubArchivePath}
-	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-	# DEPENDS ${IrrSubArchives}
-)
-]]
 
 # Alias target provides add_submodule compatibility
 add_library(IrrlichtMt::IrrlichtMt ALIAS IrrlichtMt)
@@ -358,8 +342,8 @@ install(TARGETS ${INSTALL_TARGETS}
 	DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 )
 
-set(lib_default ${MINETEST_ROOT_DIR}/build/lib/irrlichtmt/lib/${sysname}/${CMAKE_BUILD_TYPE})
-set(lib_wanted ${MINETEST_ROOT_DIR}/lib/irrlichtmt/lib/${sysname})
+set(lib_default ${PARENT_APP_ROOT_DIR}/build/lib/irrlichtmt/lib/${sysname}/${CMAKE_BUILD_TYPE})
+set(lib_wanted ${PARENT_APP_ROOT_DIR}/lib/irrlichtmt/lib/${sysname})
 
 message(">> lib_default: ${lib_default}")
 message(">> lib_wanted: ${lib_wanted}")

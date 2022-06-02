@@ -70,24 +70,24 @@
 #endif
 
 #if defined(__APPLE__)
-#if defined(__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__) || defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
-#define _IRR_IOS_PLATFORM_
-#define _IRR_COMPILE_WITH_IOS_DEVICE_
-#define NO_IRR_COMPILE_WITH_OPENGL_
-// The application state events and following methods: IrrlichtDevice::isWindowActive, IrrlichtDevice::isWindowFocused,
-// IrrlichtDevice::isWindowMinimized works out of box only if you'll use built-in CIrrDelegateiOS,
-// so _IRR_COMPILE_WITH_IOS_BUILTIN_MAIN_ must be enabled in this case. If you need a custom UIApplicationDelegate
-// you must disable _IRR_COMPILE_WITH_IOS_BUILTIN_MAIN_ definition and handle all application events yourself.
-#define _IRR_COMPILE_WITH_IOS_BUILTIN_MAIN_
-#else
-#define _IRR_OSX_PLATFORM_
-#ifndef _IRR_COMPILE_WITH_SDL_DEVICE_
-#define _IRR_COMPILE_WITH_OSX_DEVICE_
-#endif
-#define NO_IRR_COMPILE_WITH_OGLES1_
-#define NO_IRR_COMPILE_WITH_OGLES2_
-#define NO_IRR_COMPILE_WITH_WEBGL1_
-#endif
+    #if defined(__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__) || defined(__IPHONE_OS_VERSION_MIN_REQUIRED)
+        #define _IRR_IOS_PLATFORM_
+        #define _IRR_COMPILE_WITH_IOS_DEVICE_
+        #define NO_IRR_COMPILE_WITH_OPENGL_
+        // The application state events and following methods: IrrlichtDevice::isWindowActive, IrrlichtDevice::isWindowFocused,
+        // IrrlichtDevice::isWindowMinimized works out of box only if you'll use built-in CIrrDelegateiOS,
+        // so _IRR_COMPILE_WITH_IOS_BUILTIN_MAIN_ must be enabled in this case. If you need a custom UIApplicationDelegate
+        // you must disable _IRR_COMPILE_WITH_IOS_BUILTIN_MAIN_ definition and handle all application events yourself.
+        #define _IRR_COMPILE_WITH_IOS_BUILTIN_MAIN_
+    #else
+        #define _IRR_OSX_PLATFORM_
+        #ifndef _IRR_COMPILE_WITH_SDL_DEVICE_
+            #define _IRR_COMPILE_WITH_OSX_DEVICE_
+        #endif
+        #define NO_IRR_COMPILE_WITH_OGLES1_
+        #define NO_IRR_COMPILE_WITH_OGLES2_
+        #define NO_IRR_COMPILE_WITH_WEBGL1_
+    #endif
 #endif
 
 #if defined(__EMSCRIPTEN__)
