@@ -254,9 +254,11 @@ set(src_IrrGUIObj
 )
 
 file(GLOB includes "${CMAKE_CURRENT_SOURCE_DIR}/../../include/*.h")
+file(GLOB src_includes "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 
 add_library(IrrlichtMt
 	${includes}
+	${src_includes}
 	${src_IrrObj}
 	${src_IrrIOObj}
 	${src_IrrGUIObj}
