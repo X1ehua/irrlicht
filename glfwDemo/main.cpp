@@ -1,11 +1,55 @@
 #include <irrlicht.h>
 #include "driverChoice.h"
 #include "exampleHelper.h"
+#include <GLFW/glfw3.h>
 
 using namespace irr;
 
+void log(int errCode, const char* errMsg)
+{
+    printf("glfwErr>> #%d: %s\n", errCode, errMsg);
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    // glViewport(0, 0, width, height); // Seems no effect ? Tested in GL03
+}
+
+void processInput(GLFWwindow *window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+    else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        printf(">> GLFW_KEY: space\n");
+    else if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+        printf(">> GLFW_KEY: F\n");
+}
+
 int main()
 {
+    // glfw: initialize and configure
+    glfwInit();
+    glfwSetErrorCallback(log);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+    // glfw window creation
+    GLFWwindow* window = glfwCreateWindow(600, 400, "glfwWindow", NULL, NULL);
+    if (window == NULL)
+    {
+        std::cout << "Failed to create GLFW window" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+    glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    // end of glfw-window-init
+
     video::E_DRIVER_TYPE driverType = video::EDT_OPENGL;
 
 	IrrlichtDevice *device = createDevice(driverType, core::dimension2d<u32>(512, 384));
@@ -19,18 +63,13 @@ int main()
 	video::ITexture* images = driver->getTexture(mediaPath + "2ddemo.png");
 	driver->makeColorKeyTexture(images, core::position2d<s32>(0,0));
 
-	gui::IGUIFont* font = device->getGUIEnvironment()->getBuiltInFont();
-	gui::IGUIFont* font2 =
-		device->getGUIEnvironment()->getFont(mediaPath + "fonthaettenschweiler.bmp");
-
 	core::rect<s32> imp1(349,15,385,78);
 	core::rect<s32> imp2(387,15,423,78);
 
-	driver->getMaterial2D().TextureLayer[0].BilinearFilter=true;
-	driver->getMaterial2D().AntiAliasing=video::EAAM_FULL_BASIC;
-
 	while(device->run() && driver)
 	{
+        processInput(window); // glfw
+
 		if (device->isWindowActive())
 		{
 			u32 time = device->getTimer()->getTime();
@@ -47,35 +86,11 @@ int main()
 				(time/500 % 2) ? imp1 : imp2, 0,
 				video::SColor(255,255,255,255), true);
 
-			// draw second flying imp with color cycle
-			driver->draw2DImage(images, core::position2d<s32>(270,105),
-				(time/500 % 2) ? imp1 : imp2, 0,
-				video::SColor(255,(time) % 255,255,255), true);
-
-			if (font)
-				font->draw(L"This demo shows that Irrlicht is also capable of drawing 2D graphics.",
-					core::rect<s32>(130,10,300,50),
-					video::SColor(255,255,255,255));
-
-			if (font2)
-				font2->draw(L"Also mixing with 3d graphics is possible.",
-					core::rect<s32>(130,20,300,60),
-					video::SColor(255,time % 255,time % 255,255));
-
-			// Next, we draw the Irrlicht Engine logo (without using a color or an alpha channel).
-            // Since we slightly scale the image we use the prepared filter mode.
-			driver->enableMaterial2D();
-			driver->draw2DImage(images, core::rect<s32>(10,10,108,48),
-				core::rect<s32>(354,87,442,118));
-			driver->enableMaterial2D(false);
-
-			// Finally draw a half-transparent rect under the mouse cursor.
-			core::position2d<s32> m = device->getCursorControl()->getPosition();
-			driver->draw2DRectangle(video::SColor(100,255,255,255),
-				core::rect<s32>(m.X-20, m.Y-20, m.X+20, m.Y+20));
-
 			driver->endScene();
 		}
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
 	}
 
 	device->drop();

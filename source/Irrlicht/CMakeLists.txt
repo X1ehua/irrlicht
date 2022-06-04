@@ -253,8 +253,8 @@ set(src_IrrGUIObj
 	CGUIProfiler.cpp
 )
 
-file(GLOB includes "${CMAKE_CURRENT_SOURCE_DIR}/../../include/*.h")
-file(GLOB src_includes "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
+file(GLOB includes "../../include/*.h")
+file(GLOB_RECURSE src_includes "./**.h")
 
 add_library(IrrlichtMt
 	${includes}

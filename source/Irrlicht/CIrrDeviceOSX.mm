@@ -376,7 +376,7 @@ bool CIrrDeviceMacOSX::createWindow()
     
     const NSBackingStoreType type = (CreationParams.DriverType == video::EDT_OPENGL) ? NSBackingStoreBuffered : NSBackingStoreNonretained;
     
-    // TODO: fullscreen
+    // TODO fullscreen
     //if (!CreationParams.Fullscreen)
     {
         if (!CreationParams.WindowId) //create another window when WindowId is null
@@ -395,18 +395,29 @@ bool CIrrDeviceMacOSX::createWindow()
             x = 85, y = 270;
             CreationParams.WindowPosition.X = x;
             CreationParams.WindowPosition.Y = y;
-            Window = [[NSWindow alloc] initWithContentRect:NSMakeRect(x, y, CreationParams.WindowSize.Width,CreationParams.WindowSize.Height) styleMask:NSTitledWindowMask+NSClosableWindowMask+NSResizableWindowMask backing:type defer:FALSE];
+            Window = [[NSWindow alloc] initWithContentRect : NSMakeRect(x,
+                                                                        y,
+                                                                        CreationParams.WindowSize.Width,
+                                                                        CreationParams.WindowSize.Height)
+                                                 // styleMask : (NSUInteger)15
+                                                 styleMask : NSWindowStyleMaskTitled +
+                                                             NSWindowStyleMaskClosable +
+                                                             NSWindowStyleMaskResizable
+                                                   backing : type
+                                                     defer : FALSE];
 
             // if (CreationParams.WindowPosition.X == -1 && CreationParams.WindowPosition.Y == -1)
             //     [Window center];
         }
+        // printf(">>>>>>> #413\n");
         
         DeviceWidth = CreationParams.WindowSize.Width;
         DeviceHeight = CreationParams.WindowSize.Height;
         
         result = true;
     }
-    
+    // [NSApp activateIgnoringOtherApps:YES];
+
     if (result)
     {
         if (Window)
@@ -520,8 +531,8 @@ bool CIrrDeviceMacOSX::run()
 		switch([(NSEvent *)event type])
 		{
             case NSEventTypeKeyDown:
+                // printf("NSEvent KEY-DOWN: %c\n", ievent.KeyInput.Char);
 				postKeyEvent(event, ievent, true);
-                printf("NSEvent KEY-DOWN: %c\n", ievent.KeyInput.Char);
 				break;
 
             case NSEventTypeKeyUp:
@@ -869,7 +880,7 @@ void CIrrDeviceMacOSX::setMouseLocation(int x,int y)
 		// Irrlicht window exists
 		p.x = (float) x;
 		p.y = (float) (DeviceHeight - y);
-		p = [Window convertBaseToScreen:p];
+		p = [Window convertPointToScreen:p];
 		p.y = ScreenHeight - p.y;
 	}
 	else
@@ -896,7 +907,7 @@ void CIrrDeviceMacOSX::setCursorVisible(bool visible)
 }
     
     
-void CIrrDeviceMacOSX::setWindow(NSWindow* window)
+void CIrrDeviceMacOSX::setWindow(NSWindow* window) // called in windowWillClose()
 {
     Window = window;
 }
@@ -1076,316 +1087,21 @@ bool CIrrDeviceMacOSX::present(video::IImage* surface, void* windowId, core::rec
 	if (!surface)
 		return false;
 
-	if (SoftwareRendererType > 0)
+	if (SoftwareRendererType > 0) // Content deleted
 	{
-		const u32 colorSamples=3;
-		// do we need to change the size?
-		const bool updateSize = !SoftwareDriverTarget ||
-				s32([SoftwareDriverTarget size].width) != surface->getDimension().Width ||
-				s32([SoftwareDriverTarget size].height) != surface->getDimension().Height;
-
-		NSRect areaRect = NSMakeRect(0.0, 0.0, surface->getDimension().Width, surface->getDimension().Height);
-		const u32 destPitch = (colorSamples * areaRect.size.width);
-
-		// create / update the target
-		if (updateSize)
-		{
-			[SoftwareDriverTarget release];
-			// allocate target for IImage
-			SoftwareDriverTarget = [[NSBitmapImageRep alloc]
-					initWithBitmapDataPlanes: nil
-					pixelsWide: areaRect.size.width
-					pixelsHigh: areaRect.size.height
-					bitsPerSample: 8
-					samplesPerPixel: colorSamples
-					hasAlpha: NO
-					isPlanar: NO
-					colorSpaceName: NSCalibratedRGBColorSpace
-					bytesPerRow: destPitch
-					bitsPerPixel: 8*colorSamples];
-		}
-
-		if (SoftwareDriverTarget==nil)
-			return false;
-
-		// get pointer to image data
-		unsigned char* imgData = (unsigned char*)surface->getData();
-
-		u8* srcdata = reinterpret_cast<u8*>(imgData);
-		u8* destData = reinterpret_cast<u8*>([SoftwareDriverTarget bitmapData]);
-		const u32 srcheight = core::min_(surface->getDimension().Height, (u32)areaRect.size.height);
-		const u32 srcPitch = surface->getPitch();
-		const u32 minWidth = core::min_(surface->getDimension().Width, (u32)areaRect.size.width);
-		for (u32 y=0; y!=srcheight; ++y)
-		{
-			if(SoftwareRendererType == 2)
-			{
-				if (surface->getColorFormat() == video::ECF_A8R8G8B8)
-					video::CColorConverter::convert_A8R8G8B8toB8G8R8(srcdata, minWidth, destData);
-				else if (surface->getColorFormat() == video::ECF_A1R5G5B5)
-					video::CColorConverter::convert_A1R5G5B5toB8G8R8(srcdata, minWidth, destData);
-				else
-					video::CColorConverter::convert_viaFormat(srcdata, surface->getColorFormat(), minWidth, destData, video::ECF_R8G8B8);
-			}
-			else
-			{
-				if (surface->getColorFormat() == video::ECF_A8R8G8B8)
-					video::CColorConverter::convert_A8R8G8B8toR8G8B8(srcdata, minWidth, destData);
-				else if (surface->getColorFormat() == video::ECF_A1R5G5B5)
-					video::CColorConverter::convert_A1R5G5B5toR8G8B8(srcdata, minWidth, destData);
-				else
-					video::CColorConverter::convert_viaFormat(srcdata, surface->getColorFormat(), minWidth, destData, video::ECF_R8G8B8);
-			}
-
-			srcdata += srcPitch;
-			destData += destPitch;
-		}
-
-		// todo: draw properly into a sub-view
-		[SoftwareDriverTarget draw];
+        fprintf(stderr, ">> ERROR! SoftwareRendererType > 0 : %d\n", SoftwareRendererType);
+        fflush(stderr);
 	}
 
 	return false;
 }
-
-
-#if defined (_IRR_COMPILE_WITH_JOYSTICK_EVENTS_)
-static void joystickRemovalCallback(void * target,
-		IOReturn result, void * refcon, void * sender)
-{
-	JoystickInfo *joy = (JoystickInfo *) refcon;
-	joy->removed = 1;
-}
-#endif // _IRR_COMPILE_WITH_JOYSTICK_EVENTS_
-
 
 bool CIrrDeviceMacOSX::activateJoysticks(core::array<SJoystickInfo> & joystickInfo)
 {
-#if defined (_IRR_COMPILE_WITH_JOYSTICK_EVENTS_)
-	ActiveJoysticks.clear();
-	joystickInfo.clear();
-
-	io_object_t hidObject = 0;
-	io_iterator_t hidIterator = 0;
-	IOReturn result = kIOReturnSuccess;
-	mach_port_t masterPort = 0;
-	CFMutableDictionaryRef hidDictionaryRef = NULL;
-
-	result = IOMasterPort (bootstrap_port, &masterPort);
-	if (kIOReturnSuccess != result)
-	{
-		os::Printer::log("initialiseJoysticks IOMasterPort failed", ELL_ERROR);
-		return false;
-	}
-
-	hidDictionaryRef = IOServiceMatching (kIOHIDDeviceKey);
-	if (!hidDictionaryRef)
-	{
-		os::Printer::log("initialiseJoysticks IOServiceMatching failed", ELL_ERROR);
-		return false;
-	}
-	result = IOServiceGetMatchingServices (masterPort, hidDictionaryRef, &hidIterator);
-
-	if (kIOReturnSuccess != result)
-	{
-		os::Printer::log("initialiseJoysticks IOServiceGetMatchingServices failed", ELL_ERROR);
-		return false;
-	}
-
-	//no joysticks just return
-	if (!hidIterator)
-		return false;
-
-	u32 jindex = 0u;
-	while ((hidObject = IOIteratorNext (hidIterator)))
-	{
-		JoystickInfo info;
-
-		// get dictionary for HID properties
-		CFMutableDictionaryRef hidProperties = 0;
-
-		kern_return_t kern_result = IORegistryEntryCreateCFProperties (hidObject, &hidProperties, kCFAllocatorDefault, kNilOptions);
-		if ((kern_result == KERN_SUCCESS) && hidProperties)
-		{
-			HRESULT plugInResult = S_OK;
-			SInt32 score = 0;
-			IOCFPlugInInterface ** ppPlugInInterface = NULL;
-			result = IOCreatePlugInInterfaceForService (hidObject, kIOHIDDeviceUserClientTypeID,
-													kIOCFPlugInInterfaceID, &ppPlugInInterface, &score);
-			if (kIOReturnSuccess == result)
-			{
-				plugInResult = (*ppPlugInInterface)->QueryInterface (ppPlugInInterface,
-									CFUUIDGetUUIDBytes (kIOHIDDeviceInterfaceID), (void **) &(info.interface));
-				if (plugInResult != S_OK)
-					os::Printer::log("initialiseJoysticks query HID class device interface failed", ELL_ERROR);
-				(*ppPlugInInterface)->Release(ppPlugInInterface);
-			}
-			else
-				continue;
-
-			if (info.interface != NULL)
-			{
-				result = (*(info.interface))->open (info.interface, 0);
-				if (result == kIOReturnSuccess)
-				{
-					(*(info.interface))->setRemovalCallback (info.interface, joystickRemovalCallback, &info, &info);
-					getJoystickDeviceInfo(hidObject, hidProperties, &info);
-
-					// get elements
-					CFTypeRef refElementTop = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDElementKey));
-					if (refElementTop)
-					{
-						CFTypeID type = CFGetTypeID (refElementTop);
-						if (type == CFArrayGetTypeID())
-						{
-							CFRange range = {0, CFArrayGetCount ((CFArrayRef)refElementTop)};
-							info.numActiveJoysticks = ActiveJoysticks.size();
-							CFArrayApplyFunction ((CFArrayRef)refElementTop, range, getJoystickComponentArrayHandler, &info);
-						}
-					}
-				}
-				else
-				{
-					CFRelease (hidProperties);
-					os::Printer::log("initialiseJoysticks Open interface failed", ELL_ERROR);
-					continue;
-				}
-
-				CFRelease (hidProperties);
-
-				result = IOObjectRelease (hidObject);
-
-				if ( (info.usagePage != kHIDPage_GenericDesktop) ||
-					((info.usage != kHIDUsage_GD_Joystick &&
-					info.usage != kHIDUsage_GD_GamePad &&
-					info.usage != kHIDUsage_GD_MultiAxisController)) )
-				{
-					closeJoystickDevice (&info);
-					continue;
-				}
-
-				for (u32 i = 0; i < 6; ++i)
-					info.persistentData.JoystickEvent.Axis[i] = 0;
-
-				ActiveJoysticks.push_back(info);
-
-				SJoystickInfo returnInfo;
-				returnInfo.Joystick = jindex;
-				returnInfo.Axes = info.axes;
-				//returnInfo.Hats = info.hats;
-				returnInfo.Buttons = info.buttons;
-				returnInfo.Name = info.joystickName;
-				returnInfo.PovHat = SJoystickInfo::POV_HAT_UNKNOWN;
-				++ jindex;
-
-				//if (info.hatComp.size())
-				//	returnInfo.PovHat = SJoystickInfo::POV_HAT_PRESENT;
-				//else
-				//	returnInfo.PovHat = SJoystickInfo::POV_HAT_ABSENT;
-
-				joystickInfo.push_back(returnInfo);
-			}
-
-		}
-		else
-		{
-			continue;
-		}
-	}
-	result = IOObjectRelease (hidIterator);
-
-	return true;
-#endif // _IRR_COMPILE_WITH_JOYSTICK_EVENTS_
-
-	return false;
+    return false; // Content deleted
 }
 
-void CIrrDeviceMacOSX::pollJoysticks()
-{
-#if defined (_IRR_COMPILE_WITH_JOYSTICK_EVENTS_)
-	if(0 == ActiveJoysticks.size())
-		return;
-
-	u32 joystick;
-	for (joystick = 0; joystick < ActiveJoysticks.size(); ++joystick)
-	{
-		if (ActiveJoysticks[joystick].removed)
-			continue;
-
-		bool found = false;
-		ActiveJoysticks[joystick].persistentData.JoystickEvent.Joystick = joystick;
-
-		if (ActiveJoysticks[joystick].interface)
-		{
-			for (u32 n = 0; n < ActiveJoysticks[joystick].axisComp.size(); n++)
-			{
-				IOReturn result = kIOReturnSuccess;
-				IOHIDEventStruct hidEvent;
-				hidEvent.value = 0;
-				result = (*(ActiveJoysticks[joystick].interface))->getElementValue(ActiveJoysticks[joystick].interface, ActiveJoysticks[joystick].axisComp[n].cookie, &hidEvent);
-				if (kIOReturnSuccess == result)
-				{
-					const f32 min = -32768.0f;
-					const f32 max = 32767.0f;
-					const f32 deviceScale = max - min;
-					const f32 readScale = (f32)ActiveJoysticks[joystick].axisComp[n].maxRead - (f32)ActiveJoysticks[joystick].axisComp[n].minRead;
-
-					if (hidEvent.value < ActiveJoysticks[joystick].axisComp[n].minRead)
-						ActiveJoysticks[joystick].axisComp[n].minRead = hidEvent.value;
-					if (hidEvent.value > ActiveJoysticks[joystick].axisComp[n].maxRead)
-						ActiveJoysticks[joystick].axisComp[n].maxRead = hidEvent.value;
-
-					if (readScale != 0.0f)
-						hidEvent.value = (int)(((f32)((f32)hidEvent.value - (f32)ActiveJoysticks[joystick].axisComp[n].minRead) * deviceScale / readScale) + min);
-
-					if (ActiveJoysticks[joystick].persistentData.JoystickEvent.Axis[n] != (s16)hidEvent.value)
-						found = true;
-					ActiveJoysticks[joystick].persistentData.JoystickEvent.Axis[n] = (s16)hidEvent.value;
-				}
-			}//axis check
-
-			for (u32 n = 0; n < ActiveJoysticks[joystick].buttonComp.size(); n++)
-			{
-				IOReturn result = kIOReturnSuccess;
-				IOHIDEventStruct hidEvent;
-				hidEvent.value = 0;
-				result = (*(ActiveJoysticks[joystick].interface))->getElementValue(ActiveJoysticks[joystick].interface, ActiveJoysticks[joystick].buttonComp[n].cookie, &hidEvent);
-				if (kIOReturnSuccess == result)
-				{
-					if (hidEvent.value && !((ActiveJoysticks[joystick].persistentData.JoystickEvent.ButtonStates & (1 << n)) ? true : false) )
-							found = true;
-					else if (!hidEvent.value && ((ActiveJoysticks[joystick].persistentData.JoystickEvent.ButtonStates & (1 << n)) ? true : false))
-							found = true;
-
-					if (hidEvent.value)
-							ActiveJoysticks[joystick].persistentData.JoystickEvent.ButtonStates |= (1 << n);
-					else
-							ActiveJoysticks[joystick].persistentData.JoystickEvent.ButtonStates &= ~(1 << n);
-				}
-			}//button check
-			//still ToDo..will be done soon :)
-/*
-			for (u32 n = 0; n < ActiveJoysticks[joystick].hatComp.size(); n++)
-			{
-				IOReturn result = kIOReturnSuccess;
-				IOHIDEventStruct hidEvent;
-				hidEvent.value = 0;
-				result = (*(ActiveJoysticks[joystick].interface))->getElementValue(ActiveJoysticks[joystick].interface, ActiveJoysticks[joystick].hatComp[n].cookie, &hidEvent);
-				if (kIOReturnSuccess == result)
-				{
-					if (ActiveJoysticks[joystick].persistentData.JoystickEvent.POV != hidEvent.value)
-						found = true;
-					ActiveJoysticks[joystick].persistentData.JoystickEvent.POV = hidEvent.value;
-				}
-			}//hat check
-*/
-		}
-
-		if (found)
-			postEventFromUser(ActiveJoysticks[joystick].persistentData);
-	}
-#endif // _IRR_COMPILE_WITH_JOYSTICK_EVENTS_
-}
+void CIrrDeviceMacOSX::pollJoysticks() {} // Content deleted
 
 } // end namespace
 
